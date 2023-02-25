@@ -1,6 +1,6 @@
 version: "3" 
 # Defines which compose version to use
-# want to start the service 
+# want to start the service file 
 services:
   # Services line define which Docker images to run. In this case, it will be MySQL server and WordPress image.
   db:
