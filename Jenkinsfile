@@ -1,37 +1,34 @@
 pipeline {
-  agent any
-  stages {
-    stage("verify tooling") {
-      steps {
-        sh '''
-          docker version
-          docker info
-          docker compose version 
-          curl --version
-        '''
-      }
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'docker-compose build'
+            }
+        }
+
+        stage('Run') {
+            steps {
+                sh 'docker-compose up -d'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    def status = sh(script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8000', returnStatus: true)
+                    if (status != 200) {
+                        error "WordPress app not running, returned HTTP status code ${status}"
+                    }
+                }
+            }
+        }
     }
-    stage('Prune Docker data') {
-      steps {
-        sh 'docker system prune -a --volumes -f'
-      }
+
+    post {
+        always {
+            sh 'docker-compose down'
+        }
     }
-    stage('Start container') {
-      steps {
-        sh 'docker compose up -d --no-color --wait'
-        sh 'docker compose ps'
-      }
-    }
-    stage('Run tests against the container') {
-      steps {
-        sh 'curl http://localhost:3000/param?query=demo | jq'
-      }
-    }
-  }
-  post {
-    always {
-      sh 'docker compose down --remove-orphans -v'
-      sh 'docker compose ps '
-    }
-  }
 }
